@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export const componentTypes = ['financial-summary','mortgage-capacity','mortgage-simulator','product-comparison','savings-goal-form','goal-progress','confirmation','financial-dashboard','goal-dashboard','activity-list','cashflow-alert','credit-options'] as const;
+export const componentTypes = ['financial-summary','mortgage-capacity','mortgage-simulator','product-comparison','savings-goal-form','goal-progress','confirmation','financial-dashboard','goal-dashboard','activity-list','cashflow-alert','credit-options','decision-insights'] as const;
 export type ComponentType = typeof componentTypes[number];
 export const actions = ['UPDATE_MORTGAGE_SIMULATION','REQUEST_CREATE_SAVINGS_GOAL','CONFIRM_CREATE_SAVINGS_GOAL','RECORD_FINANCIAL_MOVEMENT','CONFIRM_RECORD_FINANCIAL_MOVEMENT','REQUEST_CREDIT_OPTIONS','REFRESH_DASHBOARD','SELECT_GOAL','UPDATE_GOAL','PAUSE_GOAL','RESUME_GOAL','CANCEL_GOAL','ARCHIVE_GOAL','DELETE_GOAL','CONFIRM_UPDATE_GOAL','CANCEL'] as const;
 export type Action = typeof actions[number];
@@ -12,7 +12,15 @@ const amount = z.number().finite();
 const goal = z.object({ id: z.string(), name: z.string(), targetAmount: amount.positive(), currentAmount: amount.nonnegative(), monthlyContribution: amount.nullish(), targetDate: z.string().nullish(), status: z.string().optional(), progress: amount.optional(), metadata: record.optional() }).passthrough();
 const product = z.object({ id: z.string(), name: z.string(), annualRate: amount.nullish(), cat: amount.nullish(), minimumAmount: amount.nullish(), maximumAmount: amount.nullish(), minTermMonths: amount.nullish(), maxTermMonths: amount.nullish(), description: z.string().nullish() }).passthrough();
 const movement = z.object({ id: z.string(), type: z.enum(['DEPOSIT','INCOME','WITHDRAWAL','EXPENSE']), amount: amount.positive(), occurredAt: z.string(), category: z.string().nullish(), note: z.string().nullish() }).passthrough();
+const scheduleRow = z.object({ paymentNumber: z.number().int().positive(), payment: amount.nonnegative(), principal: amount.nonnegative(), interest: amount.nonnegative(), remainingBalance: amount.nonnegative() });
+export const decisionInsightsSchema = z.object({
+  source: z.enum(['ai', 'rules']), headline: z.string(), summary: z.string(),
+  signals: z.array(z.object({ id: z.string(), label: z.string(), value: amount.optional(), format: z.enum(['money','percent','number']).optional(), tone: z.enum(['positive','warning','neutral']), detail: z.string() })),
+  nextSteps: z.array(z.object({ label: z.string(), reason: z.string(), action: z.enum(['SELECT_GOAL','REQUEST_CREDIT_OPTIONS']).optional(), goalId: z.string().optional() })),
+  evidence: z.array(z.string()), generatedAt: z.string(), snapshotId: z.string().optional(), transport: z.enum(['mcp','domain']).optional()
+}).passthrough();
 const componentData: Record<string, z.ZodType> = {
+  'decision-insights': decisionInsightsSchema,
   'financial-dashboard': z.object({ monthlyIncome: amount, monthlyExpenses: amount, monthlyDebtPayments: amount, availableMonthlyCash: amount, currentSavings: amount, creditScore: amount.nullish(), goals: z.array(goal), movements: z.array(movement) }).passthrough(),
   'goal-dashboard': z.object({ goals: z.array(goal) }).passthrough(),
   'activity-list': z.object({ movements: z.array(movement) }).passthrough(),
@@ -21,7 +29,7 @@ const componentData: Record<string, z.ZodType> = {
   'cashflow-alert': z.object({ currentAvailable: amount, projectedAvailable: amount, warning: z.string().nullish(), goalImpacts: z.array(record).optional(), action: z.enum(actions).optional() }).passthrough(),
   'savings-goal-form': z.object({ name: z.string().optional(), targetAmount: amount.optional(), monthlyContribution: amount.optional(), targetDate: z.string().optional() }).passthrough(),
   'confirmation': z.object({ message: z.string(), action: z.enum(actions).optional() }).passthrough(),
-  'mortgage-simulator': z.object({ products: z.array(product).optional(), propertyValue: amount.optional(), downPayment: amount.optional(), termMonths: amount.optional(), estimatedMonthlyPayment: amount.optional() }).passthrough(),
+  'mortgage-simulator': z.object({ products: z.array(product).optional(), propertyValue: amount.optional(), downPayment: amount.optional(), termMonths: amount.optional(), estimatedMonthlyPayment: amount.optional(), loanAmount: amount.optional(), totalInterest: amount.optional(), totalPayment: amount.optional(), schedule: z.array(scheduleRow).optional() }).passthrough(),
   'financial-summary': z.object({ monthlyIncome: amount, monthlyExpenses: amount, currentSavings: amount }).passthrough(),
   'mortgage-capacity': z.object({ estimatedMaxPayment: amount }).passthrough(),
   'goal-progress': z.object({ targetAmount: amount.positive(), currentAmount: amount.nonnegative() }).passthrough()

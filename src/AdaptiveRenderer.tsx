@@ -1,7 +1,8 @@
 import { Component, ReactNode, useEffect, useState } from 'react';
 import { AdaptiveUIResponse, AdaptiveComponent, Action, actions } from './types';
 import { ActivityList, CashflowAlert, FinancialDashboard, GoalDashboard, WidgetProps } from './DashboardWidgets';
-import { money, date, percent } from './format';
+import { money, date } from './format';
+import { AmortizationView, DecisionInsights, ProductTable } from './FinancialVisuals';
 type RendererProps = { response: AdaptiveUIResponse; onInteract: WidgetProps['onInteract'] };
 type Row = Record<string, unknown>;
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : [];
@@ -10,7 +11,7 @@ function Summary({ component }: { component: AdaptiveComponent }) { const d = co
 function Capacity({ component }: { component: AdaptiveComponent }) { return <article className="data-card capacity-card"><CardHead component={component}/><div className="capacity-value"><span>Capacidad mensual estimada</span><strong>{money(component.data.estimatedMaxPayment)}</strong><em>{String(component.data.note || 'Estimación sujeta a evaluación; no representa aprobación.')}</em></div></article>; }
 function Products({ component }: { component: AdaptiveComponent }) {
   const products = rows(component.data.products);
-  return <article className="data-card products-card"><CardHead component={component}/>{products.length ? <div className="product-grid">{products.map(product => <div className="product" key={String(product.id)}><h3>{String(product.name)}</h3><p>{String(product.description || 'Consulta las condiciones del producto.')}</p><strong>{percent(product.annualRate)} <small>tasa anual</small></strong><dl className="goal-details"><div><dt>CAT</dt><dd>{percent(product.cat)}</dd></div><div><dt>Plazo mínimo / máximo</dt><dd>{product.minTermMonths == null ? 'Sin dato' : String(product.minTermMonths)} / {product.maxTermMonths == null ? 'Sin dato' : String(product.maxTermMonths)} meses</dd></div><div><dt>Monto mínimo</dt><dd>{money(product.minimumAmount)}</dd></div><div><dt>Monto máximo</dt><dd>{money(product.maximumAmount)}</dd></div>{typeof product.monthlyPayment === 'number' && <div><dt>Mensualidad estimada</dt><dd>{money(product.monthlyPayment)}</dd></div>}</dl><p>Información para explorar. Sujeta a evaluación; no es una aprobación.</p></div>)}</div> : <div className="empty-dashboard">No hay productos disponibles para esta categoría en el catálogo.</div>}</article>;
+  return <article className="data-card products-card" tabIndex={-1}><CardHead component={component}/>{products.length ? <><ProductTable products={products}/><p className="chart-footnote">Condiciones del catálogo para explorar. Sujetas a evaluación; no representan una aprobación.</p></> : <div className="empty-dashboard">No hay productos disponibles para esta categoría en el catálogo.</div>}</article>;
 }
 function Simulator({ component, onInteract }: WidgetProps) {
   const d = component.data;
@@ -26,7 +27,7 @@ function Simulator({ component, onInteract }: WidgetProps) {
     <label>Producto<select required value={productId} onChange={event => setProductId(event.target.value)}><option value="">Selecciona un producto</option>{products.map(product => <option key={String(product.id)} value={String(product.id)}>{String(product.name)}</option>)}</select></label>
     <label>Valor de la vivienda en MXN<input type="number" required min="0.01" step="0.01" value={value} onChange={event => setValue(event.target.value)}/></label><label>Enganche en MXN<input type="number" required min="0" step="0.01" value={down} onChange={event => setDown(event.target.value)}/></label>
     <label>Plazo en meses<input type="number" required min={Number(selected?.minTermMonths) || 1} max={selected?.maxTermMonths == null ? undefined : Number(selected.maxTermMonths)} step="1" value={term} onChange={event => setTerm(event.target.value)}/></label>
-    {validation && <p role="alert">{validation}</p>}<button className="primary-button">Calcular estimación</button></form></div></article>;
+    {validation && <p role="alert">{validation}</p>}<button className="primary-button">Calcular estimación</button></form></div><AmortizationView data={d}/></article>;
 }
 function GoalForm({ component, onInteract }: WidgetProps) {
   const d = component.data;
@@ -65,6 +66,7 @@ export function AdaptiveRenderer({ response, onInteract }: RendererProps) {
   return <ViewBoundary key={response.sessionId}><div className="component-stack">{response.components.length === 0 && <div className="empty-dashboard">No hay información para mostrar en esta vista.</div>}{response.components.map(component => {
     const props = { component, onInteract };
     switch (component.type) {
+      case 'decision-insights': return <DecisionInsights key={component.id} {...props}/>;
       case 'financial-dashboard': return <FinancialDashboard key={component.id} {...props}/>;
       case 'goal-dashboard': return <GoalDashboard key={component.id} {...props}/>;
       case 'activity-list': return <ActivityList key={component.id} component={component}/>;

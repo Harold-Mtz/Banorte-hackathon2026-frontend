@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Action, AdaptiveComponent } from './types';
 import { money, date } from './format';
+import { CashflowChart, GoalTable, ImpactBridge, MovementTable } from './FinancialVisuals';
 
 export type WidgetProps = { component: AdaptiveComponent; onInteract: (component: AdaptiveComponent, action: Action, payload?: Record<string, unknown>) => void };
 type Row = Record<string, unknown>;
@@ -18,20 +19,23 @@ export function FinancialDashboard({ component, onInteract }: WidgetProps) {
   const [occurredAt, setOccurredAt] = useState('');
   useEffect(() => setGoalId(String(d.selectedGoalId ?? '')), [d.selectedGoalId]);
   const goals = rows(d.goals).filter(goal => ['ACTIVE', 'COMPLETED'].includes(String(goal.status)));
+  const activeGoalId = goals.some(goal => goal.id === goalId) ? goalId : '';
   const linkGoal = ['DEPOSIT', 'WITHDRAWAL'].includes(type);
   const metrics = [['Disponible estimado', d.availableMonthlyCash], ['Ingreso mensual', d.monthlyIncome], ['Gasto mensual', d.monthlyExpenses], ['Deuda mensual', d.monthlyDebtPayments], ['Ahorro líquido', d.currentSavings]];
   return <article className="data-card dashboard-card"><div className="card-head"><div><span className="dashboard-kicker">{String(d.period ?? 'PANORAMA FINANCIERO')}</span><h2>{component.title}</h2><p>Disponible después de gastos, deuda y retiros del periodo.</p></div><button className="text-button" onClick={() => onInteract(component, 'REFRESH_DASHBOARD')}>Actualizar</button></div>
     <div className="dashboard-metrics">{metrics.map(([label, value], index) => <div className={'metric ' + (index === 0 ? 'metric-primary' : '')} key={String(label)}><span>{String(label)}</span><strong>{money(value)}</strong></div>)}<div className="metric"><span>Score crediticio</span><strong>{d.creditScore == null ? 'Sin dato' : String(d.creditScore)}</strong><small>Si está disponible en tu perfil</small></div></div>
-    <form className="movement-form" onSubmit={event => { event.preventDefault(); onInteract(component, 'RECORD_FINANCIAL_MOVEMENT', { type, amount: Number(amount), ...(linkGoal && goalId ? { goalId } : {}), category, note, ...(occurredAt ? { occurredAt: new Date(occurredAt).toISOString() } : {}) }); }}>
+    <CashflowChart data={d}/>
+    <details className="movement-drawer"><summary><span><b>Registrar un movimiento</b><small>Aportar, ingresar, gastar o retirar</small></span><span aria-hidden="true">＋</span></summary>
+    <form className="movement-form" onSubmit={event => { event.preventDefault(); onInteract(component, 'RECORD_FINANCIAL_MOVEMENT', { type, amount: Number(amount), ...(linkGoal && activeGoalId ? { goalId: activeGoalId } : {}), category, note, ...(occurredAt ? { occurredAt: new Date(occurredAt).toISOString() } : {}) }); }}>
       <div className="form-intro"><h3>Registrar movimiento</h3><p>Revisa el impacto y confirma antes de guardarlo.</p></div>
       <label>Tipo<select value={type} onChange={event => setType(event.target.value)}>{Object.entries(labels).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <label>Monto en MXN<input type="number" min="0.01" step="0.01" required value={amount} onChange={event => setAmount(event.target.value)} placeholder="Monto"/></label>
-      {linkGoal && <label>Meta<select value={goals.some(goal => goal.id === goalId) ? goalId : ''} onChange={event => setGoalId(event.target.value)}><option value="">Ahorro general</option>{goals.map(goal => <option key={String(goal.id)} value={String(goal.id)}>{String(goal.name)}</option>)}</select></label>}
+      {linkGoal && <label>Meta<select value={activeGoalId} onChange={event => setGoalId(event.target.value)}><option value="">Ahorro general</option>{goals.map(goal => <option key={String(goal.id)} value={String(goal.id)}>{String(goal.name)}</option>)}</select></label>}
       <label>Categoría<input maxLength={80} value={category} onChange={event => setCategory(event.target.value)} placeholder="Opcional"/></label>
       <label>Nota<input maxLength={240} value={note} onChange={event => setNote(event.target.value)} placeholder="Opcional"/></label>
       <label>Fecha y hora<input type="datetime-local" value={occurredAt} onChange={event => setOccurredAt(event.target.value)}/><small>Vacío: fecha actual</small></label>
       <button className="primary-button" type="submit">Revisar movimiento →</button>
-    </form>
+    </form></details>
     <button className="text-button credit-link" onClick={() => onInteract(component, 'REQUEST_CREDIT_OPTIONS')}>Explorar opciones de crédito →</button>
   </article>;
 }
@@ -47,7 +51,7 @@ function GoalItem({ goal, selected, component, onInteract }: WidgetProps & { goa
   const progress = typeof goal.progress === 'number' ? goal.progress : 0;
   const action = (value: Action) => onInteract(component, value, { goalId: goal.id });
   const checklist = rows(goal.metadata ? [goal.metadata] : [])[0]?.checklist;
-  return <div className={'goal-mini ' + (selected ? 'selected-goal' : '')}>
+  return <div className={'goal-mini ' + (selected ? 'selected-goal' : '')} tabIndex={-1}>
     <div className="goal-mini-head"><h3>{String(goal.name)}</h3><span>{Math.round(progress)}%</span></div>
     <span className="goal-status">{statuses[String(goal.status)] || String(goal.status)}</span>
     <progress max="100" value={progress} aria-label={'Progreso de ' + String(goal.name)}/>
@@ -72,15 +76,17 @@ function GoalItem({ goal, selected, component, onInteract }: WidgetProps & { goa
 }
 export function GoalDashboard(props: WidgetProps) {
   const goals = rows(props.component.data.goals);
-  return <article className="data-card dashboard-card"><div className="card-head"><div><span className="dashboard-kicker">PLANES / SEGUIMIENTO</span><h2>{props.component.title}</h2></div><span>{goals.length} metas</span></div>{goals.length ? <div className="goal-dashboard-grid">{goals.map(goal => <GoalItem {...props} goal={goal} selected={goal.id === props.component.data.selectedGoalId} key={String(goal.id) + String(goal.updatedAt)}/>)}</div> : <div className="empty-dashboard">Aún no tienes metas. Usa “Crear una meta de ahorro” para comenzar.</div>}</article>;
+  const [view, setView] = useState<'cards' | 'table'>('cards');
+  return <article className="data-card dashboard-card"><div className="card-head"><div><span className="dashboard-kicker">PLANES / SEGUIMIENTO</span><h2>{props.component.title}</h2><p>{goals.length} metas en tu ruta financiera</p></div><div className="segmented-control" aria-label="Vista de metas"><button aria-pressed={view === 'cards'} onClick={() => setView('cards')}>Tarjetas</button><button aria-pressed={view === 'table'} onClick={() => setView('table')}>Tabla</button></div></div>{goals.length ? view === 'table' ? <GoalTable goals={goals} selectedGoalId={props.component.data.selectedGoalId} onSelect={goalId => { props.onInteract(props.component, 'SELECT_GOAL', { goalId }); setView('cards'); }}/> : <div className="goal-dashboard-grid">{goals.map(goal => <GoalItem {...props} goal={goal} selected={goal.id === props.component.data.selectedGoalId} key={String(goal.id) + String(goal.updatedAt)}/>)}</div> : <div className="empty-dashboard">Aún no tienes metas. Usa “Crear una meta de ahorro” para comenzar.</div>}</article>;
 }
 export function ActivityList({ component }: { component: AdaptiveComponent }) {
   const movements = rows(component.data.movements);
-  return <article className="data-card activity-card"><div className="card-head"><div><span className="dashboard-kicker">HISTORIAL</span><h2>{component.title}</h2></div><span>{movements.length}</span></div>{movements.length ? <div className="activity-list">{movements.map(item => <div className="activity-row" key={String(item.id)}><span className={'activity-icon ' + String(item.type).toLowerCase()} aria-hidden="true">{['EXPENSE','WITHDRAWAL'].includes(String(item.type)) ? '−' : '+'}</span><div><strong>{labels[String(item.type)]}</strong><small>{String(item.category || 'Sin categoría')} · {date(item.occurredAt)}</small>{!!item.note && <small>{String(item.note)}</small>}</div><b>{money(item.amount)}</b></div>)}</div> : <div className="empty-dashboard">Los movimientos confirmados aparecerán aquí.</div>}</article>;
+  return <article className="data-card activity-card"><div className="card-head"><div><span className="dashboard-kicker">HISTORIAL / TRAZABILIDAD</span><h2>{component.title}</h2><p>Cada decisión confirmada deja un registro.</p></div></div>{movements.length ? <MovementTable movements={movements}/> : <div className="empty-dashboard">Los movimientos confirmados aparecerán aquí.</div>}</article>;
 }
 export function CashflowAlert({ component, onInteract }: WidgetProps) {
   const d = component.data;
   return <article className="data-card cashflow-alert" data-pending-action tabIndex={-1} role="region" aria-label="Movimiento pendiente de confirmación"><div className="alert-symbol">!</div><div><span className="dashboard-kicker">VISTA PREVIA / SIN REGISTRAR</span><h2>{component.title}</h2><p><strong>{labels[String(d.type)]} · {money(d.amount)}</strong></p><p>{d.goalName ? 'Meta: ' + String(d.goalName) : 'Ahorro / flujo general'}</p><p>{String(d.category || 'Sin categoría')} · {d.occurredAt ? date(d.occurredAt) : 'Fecha al confirmar'}</p><p>{String(d.warning || 'Revisa los datos antes de confirmar.')}</p>{!!d.note && <p>{String(d.note)}</p>}<div className="alert-numbers"><span>Disponible antes<b>{money(d.currentAvailable)}</b></span><span>Disponible después<b>{money(d.projectedAvailable)}</b></span><span>Ahorro después<b>{money(d.projectedSavings)}</b></span></div>
+    <ImpactBridge data={d}/>
     {rows(d.goalImpacts).map(impact => <p className="goal-warning" key={String(impact.goalId)}>{String(impact.name)}: {impact.delayMonths == null ? 'no es posible estimar el retraso sin una aportación mensual' : 'retraso estimado de ' + String(impact.delayMonths) + ' mes(es)'}.</p>)}
     <div className="confirm-actions"><button className="primary-button" onClick={() => onInteract(component, 'CONFIRM_RECORD_FINANCIAL_MOVEMENT')}>Confirmar movimiento</button><button className="text-button" onClick={() => onInteract(component, 'CANCEL')}>Cancelar</button></div><p>Impacto estimado para el periodo. La operación se guarda al confirmar.</p></div></article>;
 }

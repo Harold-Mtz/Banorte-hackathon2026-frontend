@@ -25,6 +25,10 @@ async function main() {
   assert.equal(result.status, 200, 'Authenticated dashboard');
   const response = normalize(await result.json());
   assert.ok(response.components.some(item => item.type === 'financial-dashboard'));
+  const radar = response.components.find(item => item.type === 'decision-insights');
+  assert.ok(radar && ['ai', 'rules'].includes(radar.data.source));
+  assert.equal(radar.data.transport, 'mcp');
+  console.log(JSON.stringify({ radarSource: radar.data.source, transport: radar.data.transport }));
   console.log('PASS real demo login, Bearer API request and frontend response validation');
   console.log('Rendered component catalog: ' + response.components.map(item => item.type).join(', '));
 }

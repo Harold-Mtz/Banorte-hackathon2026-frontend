@@ -32,6 +32,10 @@ export function App() {
   useEffect(() => {
     if (answer?.components.some(component => ['confirmation', 'cashflow-alert'].includes(component.type))) {
       document.querySelector<HTMLElement>('[data-pending-action]')?.focus();
+    } else if (lastOperation.current && !('message' in lastOperation.current)) {
+      const target = lastOperation.current.action === 'SELECT_GOAL' ? '.selected-goal'
+        : lastOperation.current.action === 'REQUEST_CREDIT_OPTIONS' ? '.products-card' : null;
+      if (target) document.querySelector<HTMLElement>(target)?.focus();
     }
   }, [answer]);
 

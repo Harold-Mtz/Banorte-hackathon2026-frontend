@@ -53,6 +53,29 @@ test('renders catalog percentage points without multiplying the rate', () => {
   assert.equal(money(undefined), 'Sin dato');
 });
 
+const radar = { id: 'radar', type: 'decision-insights', data: {
+  source: 'ai', transport: 'mcp', headline: 'Revisa el margen de tus metas', summary: 'Una lectura basada en datos.',
+  signals: [{ id: 'margin', label: 'Margen', value: 18000, format: 'money', tone: 'positive', detail: 'Disponible del perfil de prueba.' }],
+  nextSteps: [{ label: 'Explorar productos', reason: 'Comparar condiciones.', action: 'REQUEST_CREDIT_OPTIONS' }],
+  evidence: ['Perfil de prueba'], generatedAt: '2026-09-13T00:00:00Z'
+} };
+test('radar validates its catalog and labels actual AI versus rules honestly', () => {
+  for (const source of ['ai', 'rules']) {
+    const response = normalize({ ...direct, components: [{ ...radar, data: { ...radar.data, source } }] });
+    const html = renderToStaticMarkup(React.createElement(AdaptiveRenderer, { response, onInteract() {} }));
+    assert.ok(html.includes(source === 'ai' ? 'LECTURA CON IA' : 'LECTURA FINANCIERA'));
+  }
+  assert.throws(() => normalize({ ...direct, components: [{ ...radar, data: { ...radar.data, nextSteps: [{ label: 'Bad action', reason: 'Invalid', action: 'SEND_MONEY' }] } }] }));
+});
+test('zero and negative cash flow produce readable charts without invalid geometry', () => {
+  for (const availableMonthlyCash of [0, -500]) {
+    const response = normalize({ ...direct, components: [{ ...dashboard, data: { ...dashboard.data, monthlyIncome: 0, monthlyExpenses: 0, monthlyDebtPayments: 0, availableMonthlyCash, totals: { monthlyWithdrawals: 0 } } }] });
+    const html = renderToStaticMarkup(React.createElement(AdaptiveRenderer, { response, onInteract() {} }));
+    assert.ok(html.includes('flow-bars'));
+    assert.ok(!html.includes('NaN') && !html.includes('Infinity'));
+  }
+});
+
 test('renderer escapes model text and uses a safe unknown-component fallback', () => {
   const response = { ...direct, components: [{ id: 'unknown', type: 'unknown', data: { html: '<script>bad()</script>' } }, { id: 'confirm', type: 'confirmation', data: { message: '<script>bad()</script>', action: 'CONFIRM_CREATE_SAVINGS_GOAL' } }] };
   const html = renderToStaticMarkup(React.createElement(AdaptiveRenderer, { response, onInteract() {} }));
@@ -70,4 +93,13 @@ test('actual PostgreSQL/API responses validate and render with the frontend regi
     assert.ok(html.includes('Tu tablero financiero'));
     assert.ok(!html.includes('NaN') && !html.includes('Invalid Date'));
   }
+});
+test('mortgage response renders the service schedule as an accessible table and curve', { skip: !fs.existsSync(fixturesFile) }, () => {
+  const fixtures = JSON.parse(fs.readFileSync(fixturesFile, 'utf8'));
+  const raw = fixtures.find(response => response.data.ui.components.some(item => item.type === 'mortgage-simulator' && item.props.schedule?.length));
+  assert.ok(raw, 'Run backend test:demo to produce an amortization response');
+  const response = normalize(raw);
+  const html = renderToStaticMarkup(React.createElement(AdaptiveRenderer, { response, onInteract() {} }));
+  assert.ok(html.includes('<svg') && html.includes('<table') && html.includes('amortization-chart'));
+  assert.ok(html.includes('remaining') === false);
 });
