@@ -22,6 +22,13 @@ const schema = z.object({
     .max(850, "El máximo es 850.")
     .optional(),
 });
+const helpers = {
+  monthlyIncome: "Lo que normalmente recibes cada mes.",
+  monthlyExpenses:
+    "Un aproximado de tus gastos habituales. Incluye pagos de deuda si forman parte de ellos.",
+  currentSavings: "Dinero que tienes disponible como ahorro.",
+  currentDebt: "Saldo total aproximado de tus deudas; no es un pago mensual.",
+} as const;
 const labels = {
   monthlyIncome: "Ingreso mensual",
   monthlyExpenses: "Gastos mensuales",
@@ -44,8 +51,15 @@ export function ProfileForm({
   const mutation = useMutation({
     mutationFn: (data: ProfileInput) =>
       api.updateProfile(session!.user.id, data),
-    onSuccess: () => {
-      void refresh();
+    onSuccess: (updated) => {
+      form.reset({
+        monthlyIncome: updated.monthlyIncome,
+        monthlyExpenses: updated.monthlyExpenses,
+        currentSavings: updated.currentSavings,
+        currentDebt: updated.currentDebt,
+        creditScore: updated.creditScore ?? undefined,
+      });
+      void refresh(["profile"]);
       onSaved?.();
     },
   });
@@ -60,7 +74,7 @@ export function ProfileForm({
             min="0"
             step="0.01"
             placeholder="0"
-            helper="Pesos mexicanos (MXN)"
+            helper={helpers[key as keyof typeof helpers]}
             disabled={mutation.isPending}
             {...form.register(key as keyof typeof labels, {
               valueAsNumber: true,

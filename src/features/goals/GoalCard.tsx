@@ -1,3 +1,4 @@
+import { buildGoalProgress } from "../financial/financial-scenario";
 import { Target, CalendarDays } from "lucide-react";
 import { Card, Badge } from "../../components/common/ui";
 import type { SavingsGoal } from "../../models";
@@ -18,10 +19,7 @@ export function GoalCard({
   goal: GoalView;
   children?: React.ReactNode;
 }) {
-  const progress = Math.min(
-    100,
-    Math.max(0, (goal.currentAmount / goal.targetAmount) * 100),
-  );
+  const { progress, remaining } = buildGoalProgress(goal);
   return (
     <Card className="goal-card">
       <div className="row between">
@@ -48,6 +46,11 @@ export function GoalCard({
         value={progress}
         aria-label={`Avance de ${goal.name}`}
       />
+      <p className="goal-remaining">
+        {remaining > 0
+          ? `Faltan ${money(remaining)} para tu objetivo.`
+          : "Alcanzaste el monto de tu objetivo."}
+      </p>
       <div className="goal-details">
         <span>
           Aportación mensual

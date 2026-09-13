@@ -1,3 +1,4 @@
+import { Brand } from "../../components/common/Brand";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -57,10 +58,7 @@ export function AuthPage({ registering = false }: { registering?: boolean }) {
     <div className="auth-layout">
       <aside className="auth-story">
         <Link to="/" className="brand">
-          <span className="brand-symbol">B</span>
-          <span>
-            BANORTE<small>ADAPTIVE LIFE</small>
-          </span>
+          <Brand light />
         </Link>
         <div className="auth-story-main">
           <span className="light-pill">
@@ -85,7 +83,7 @@ export function AuthPage({ registering = false }: { registering?: boolean }) {
             </span>
           </div>
         </div>
-        <small>Banorte Adaptive Life · Proyecto de hackathon</small>
+        <small>Banorte Borias · Proyecto de hackathon</small>
       </aside>
       <main className="auth-main">
         <div className="auth-form">
@@ -104,7 +102,7 @@ export function AuthPage({ registering = false }: { registering?: boolean }) {
             <div className="steps">
               <b>1 · Tu cuenta</b>
               <span>2 · Tus finanzas</span>
-              <span>3 · Tu objetivo</span>
+              <span>3 · Tu panorama</span>
             </div>
           )}
           <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))}>

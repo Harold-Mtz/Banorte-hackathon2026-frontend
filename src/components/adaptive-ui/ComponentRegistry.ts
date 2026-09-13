@@ -1,3 +1,4 @@
+import { PlanForm, PlanResult } from "./components/GoalPlan";
 import type { ComponentType } from "react";
 import type { Props } from "./schemas";
 import { Financial } from "./components/FinancialSummary";
@@ -15,4 +16,6 @@ export const componentRegistry: Record<string, ComponentType<Props>> = {
   "savings-goal-form": SavingsForm,
   "goal-progress": Progress,
   confirmation: Confirmation,
+  "goal-plan-form": PlanForm,
+  "goal-plan": PlanResult,
 };

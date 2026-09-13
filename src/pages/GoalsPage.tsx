@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -32,7 +33,7 @@ function UpdateAmount({ goal }: { goal: SavingsGoal }) {
     mutationFn: ({ currentAmount }: { currentAmount: number }) =>
       api.updateGoal(goal.id, currentAmount),
     onSuccess: () => {
-      void refresh();
+      void refresh(["goals"]);
       setEditing(false);
     },
   });
@@ -76,11 +77,12 @@ export function GoalsPage() {
   const { id, goals } = useData();
   const refresh = useRefresh();
   const [filter, setFilter] = useState("ACTIVE");
-  const [creating, setCreating] = useState(false);
+  const [search] = useSearchParams();
+  const [creating, setCreating] = useState(search.get("new") === "1");
   const mutation = useMutation({
     mutationFn: (data: GoalInput) => api.createGoal(id, data),
     onSuccess: () => {
-      void refresh();
+      void refresh(["goals"]);
       setCreating(false);
       setFilter("ACTIVE");
     },
@@ -148,6 +150,11 @@ export function GoalsPage() {
         <div className="cards-grid">
           {goals.data
             .filter((g) => g.status === filter)
+            .sort(
+              (a, b) =>
+                Number(b.id === search.get("goal")) -
+                Number(a.id === search.get("goal")),
+            )
             .map((goal) => (
               <GoalCard key={goal.id} goal={goal}>
                 {goal.status === "ACTIVE" && <UpdateAmount goal={goal} />}

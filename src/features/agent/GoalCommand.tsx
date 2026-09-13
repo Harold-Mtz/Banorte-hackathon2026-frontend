@@ -9,6 +9,8 @@ import {
   Car,
   GraduationCap,
   Plane,
+  Heart,
+  Baby,
 } from "lucide-react";
 import { Button } from "../../components/common/ui";
 import { useAgent } from "./AgentContext";
@@ -28,6 +30,12 @@ const suggestions = [
   { label: "Un auto", text: "Quiero comprar un auto", icon: Car },
   { label: "Estudiar", text: "Quiero estudiar", icon: GraduationCap },
   { label: "Viajar", text: "Quiero viajar", icon: Plane },
+  { label: "Casarme", text: "Quiero planear mi boda", icon: Heart },
+  {
+    label: "Prepararme para un hijo",
+    text: "Quiero prepararme para un hijo",
+    icon: Baby,
+  },
 ];
 export function GoalCommand() {
   const { send, busy } = useAgent();
@@ -38,7 +46,7 @@ export function GoalCommand() {
     navigate("/app/experience");
   }
   return (
-    <section className="goal-command">
+    <section id="life-goals" className="goal-command">
       <div className="command-decoration" aria-hidden="true">
         <House size={145} strokeWidth={0.8} />
       </div>

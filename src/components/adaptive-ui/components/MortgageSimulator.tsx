@@ -1,3 +1,4 @@
+import { FinancialJourney } from "../../../features/financial/FinancialJourney";
 import { simulationSchema, type Props } from "../schemas";
 import { Card } from "../../common/ui";
 import { useAgent } from "../../../features/agent/AgentContext";
@@ -5,7 +6,7 @@ import { MortgageForm } from "../../../features/agent/MortgageForm";
 import { formatCurrencyMXN as money } from "../../../utils/format";
 import { Invalid } from "../Invalid";
 export function Simulator({ component }: Props) {
-  const { interact, busy } = useAgent();
+  const { interact, busy, response } = useAgent();
   const result = simulationSchema.safeParse(component.props);
   if (!result.success) return <Invalid />;
   const data = result.data;
@@ -34,6 +35,19 @@ export function Simulator({ component }: Props) {
           <span>Tu pago mensual estimado</span>
           <strong>{money(data.monthlyPayment)}</strong>
           <dl>
+            {data.products.find((p) => p.id === data.financialProductId)?.cat !=
+              null && (
+              <div>
+                <dt>CAT del producto</dt>
+                <dd>
+                  {
+                    data.products.find((p) => p.id === data.financialProductId)
+                      ?.cat
+                  }
+                  %
+                </dd>
+              </div>
+            )}
             {(
               [
                 ["loanAmount", "Monto del crédito"],
@@ -57,6 +71,19 @@ export function Simulator({ component }: Props) {
           </dl>
         </div>
       )}
+      {data.monthlyPayment != null &&
+        data.propertyValue != null &&
+        data.downPayment != null && (
+          <FinancialJourney
+            propertyValue={data.propertyValue}
+            downPayment={data.downPayment}
+            savingsComponentId={
+              response?.ui.components.find(
+                (c) => c.type === "savings-goal-form",
+              )?.id
+            }
+          />
+        )}
     </Card>
   );
 }

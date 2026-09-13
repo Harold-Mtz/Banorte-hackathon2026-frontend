@@ -8,10 +8,6 @@ export function useData() {
     queryKey: ["profile", id],
     queryFn: () => api.profile(id),
   });
-  const summary = useQuery({
-    queryKey: ["summary", id],
-    queryFn: () => api.summary(id),
-  });
   const goals = useQuery({
     queryKey: ["goals", id],
     queryFn: () => api.goals(id),
@@ -24,9 +20,14 @@ export function useData() {
     queryKey: ["mortgages", id],
     queryFn: () => api.mortgages(id),
   });
-  return { id, profile, summary, goals, events, mortgages };
+  return { id, profile, goals, events, mortgages };
 }
 export function useRefresh() {
   const client = useQueryClient();
-  return () => client.invalidateQueries();
+  return (
+    keys: readonly string[] = ["profile", "goals", "events", "mortgages"],
+  ) =>
+    client.invalidateQueries({
+      predicate: (query) => keys.includes(String(query.queryKey[0])),
+    });
 }

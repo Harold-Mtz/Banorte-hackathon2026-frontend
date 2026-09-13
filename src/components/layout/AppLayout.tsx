@@ -1,3 +1,4 @@
+import { Brand } from "../common/Brand";
 import { useState, useEffect, useRef } from "react";
 import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
 import {
@@ -90,10 +91,7 @@ export function AppLayout() {
           aria-label="Navegación principal"
         >
           <Link to="/app" className="brand">
-            <span className="brand-symbol">B</span>
-            <span>
-              BANORTE<small>ADAPTIVE LIFE</small>
-            </span>
+            <Brand />
           </Link>
           <button
             className="icon-button close-menu"
@@ -176,7 +174,7 @@ export function AppLayout() {
             <Outlet />
           </main>
           <footer className="app-footer">
-            <span>BANORTE ADAPTIVE LIFE</span>
+            <span>BANORTE BORIAS</span>
             <span>Tu siguiente capítulo, a tu ritmo.</span>
           </footer>
         </div>

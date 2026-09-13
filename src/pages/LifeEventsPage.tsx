@@ -54,7 +54,7 @@ export function LifeEventsPage() {
   const mutation = useMutation({
     mutationFn: (data: z.infer<typeof schema>) => api.createEvent(id, data),
     onSuccess: () => {
-      void refresh();
+      void refresh(["events"]);
       setCreating(false);
       form.reset();
     },
@@ -124,22 +124,18 @@ export function LifeEventsPage() {
                 <h3>{e.title}</h3>
                 <p className="muted">{lifeLabels[e.type]}</p>
                 <small className="muted">Desde {formatDate(e.createdAt)}</small>
-                {e.type === "FIRST_HOME" ? (
+                {
                   <Button
                     variant="secondary"
                     disabled={busy}
                     onClick={() => {
-                      send("Quiero comprar mi primera casa");
+                      send(`${lifeLabels[e.type]}: ${e.title}`);
                       navigate("/app/experience");
                     }}
                   >
                     Explorar mi plan <ArrowUpRight size={16} />
                   </Button>
-                ) : (
-                  <p className="upcoming">
-                    Objetivo registrado · Experiencia especializada próximamente
-                  </p>
-                )}
+                }
               </Card>
             );
           })}

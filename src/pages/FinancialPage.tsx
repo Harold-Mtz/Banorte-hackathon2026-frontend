@@ -7,7 +7,8 @@ import {
   ErrorState,
 } from "../components/common/ui";
 import { FinancialSummary } from "../components/common/FinancialSummary";
-import { FinancialChart } from "../components/charts/FinancialChart";
+import { MonthlyCashFlow } from "../features/financial/ScenarioCharts";
+import { buildFinancialScenario } from "../features/financial/financial-scenario";
 import { ProfileForm } from "../features/financial/ProfileForm";
 import { formatCurrencyMXN as money } from "../utils/format";
 export function FinancialPage({
@@ -15,7 +16,8 @@ export function FinancialPage({
 }: {
   onboarding?: boolean;
 }) {
-  const { profile, summary } = useData();
+  const { profile } = useData();
+  const scenario = profile.data ? buildFinancialScenario(profile.data) : null;
   const navigate = useNavigate();
   return (
     <>
@@ -49,39 +51,32 @@ export function FinancialPage({
               </h2>
               <p className="muted">Los montos se guardan en pesos mexicanos.</p>
               <ProfileForm
-                key={profile.data.updatedAt}
                 initial={{
                   ...profile.data,
                   creditScore: profile.data.creditScore ?? undefined,
                 }}
                 onSaved={
                   onboarding
-                    ? () => navigate("/app/onboarding/focus")
+                    ? () => navigate("/app/onboarding/panorama")
                     : undefined
                 }
               />
             </Card>
-            <Card>
-              {summary.data ? (
-                <>
-                  <span className="eyebrow">DISPONIBILIDAD MENSUAL</span>
+            {scenario && (
+              <div>
+                <Card>
+                  <span className="eyebrow">MARGEN MENSUAL ESTIMADO</span>
                   <strong className="big-amount">
-                    {money(summary.data.availableIncome)}
+                    {money(scenario.monthlyCashFlow)}
                   </strong>
                   <p className="muted">
-                    Ingreso menos gastos y deuda registrada, según tu perfil.
+                    Ingreso menos gastos habituales. Tu deuda acumulada se
+                    compara por separado.
                   </p>
-                  <FinancialChart data={summary.data} />
-                </>
-              ) : summary.isError ? (
-                <ErrorState
-                  error={summary.error}
-                  retry={() => void summary.refetch()}
-                />
-              ) : (
-                <Skeleton cards={1} />
-              )}
-            </Card>
+                </Card>
+                <MonthlyCashFlow scenario={scenario} />
+              </div>
+            )}
           </div>
         </>
       )}

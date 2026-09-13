@@ -1,3 +1,4 @@
+import { PreparingOverview } from "./pages/PreparingOverview";
 import {
   BrowserRouter,
   useLocation,
@@ -70,6 +71,10 @@ export function App() {
                 <Route
                   path="onboarding"
                   element={<FinancialPage onboarding />}
+                />
+                <Route
+                  path="onboarding/panorama"
+                  element={<PreparingOverview />}
                 />
                 <Route
                   path="onboarding/focus"

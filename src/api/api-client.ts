@@ -43,6 +43,8 @@ export async function request<T>(
       window.dispatchEvent(new Event("session-expired"));
     const code = raw?.error?.code ?? "API_ERROR";
     const friendly: Record<string, string> = {
+      PLAN_SAVINGS_INVALID:
+        "El ahorro que dedicarás no puede superar tus ahorros actuales ni el presupuesto del objetivo.",
       INVALID_CREDENTIALS: "El correo o la contraseña son incorrectos.",
       EMAIL_IN_USE: "Este correo ya tiene una cuenta.",
       INTERACTION_ERROR:

@@ -24,7 +24,7 @@ export function MortgagesPage() {
   const mutation = useMutation({
     mutationFn: (data: MortgageInput) => api.simulate(id, data),
     onSuccess: () => {
-      void refresh();
+      void refresh(["mortgages"]);
       setCreating(false);
     },
   });

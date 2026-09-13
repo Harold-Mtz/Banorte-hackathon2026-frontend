@@ -30,13 +30,49 @@ test("registro, onboarding, agente, simulaciones, ahorro, recarga y responsive",
   await page.getByLabel("Deuda actual", { exact: true }).fill("2000");
   await page.getByLabel("Score de crédito (opcional)").fill("720");
   await page.getByRole("button", { name: "Guardar y continuar" }).click();
-  await expect(page).toHaveURL(/onboarding\/focus/);
+  await expect(page).toHaveURL(/\/app$/);
+  await expect(
+    page.getByText(
+      "Después de tus gastos habituales tienes aproximadamente $44,000 de margen al mes.",
+    ),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Mi primera casa", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "Haz espacio para tu primera casa" }),
   ).toBeVisible();
+  await page.getByLabel("Presupuesto del objetivo (MXN)").fill("120000");
+  await page.getByLabel("Ahorro que dedicarás (MXN)").fill("20000");
+  await page.getByLabel("Plazo del plan (meses)").fill("10");
+  await page.getByLabel("Aportación prevista al mes (MXN)").fill("8000");
+  await page
+    .getByRole("button", { name: "Generar mi plan", exact: true })
+    .click();
+  await expect(
+    page.getByText("Necesita ajustes", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("table")).toBeVisible();
+  await page.getByLabel("Aportación prevista al mes (MXN)").fill("10000");
+  await page
+    .getByRole("button", { name: "Recalcular mi plan", exact: true })
+    .click();
+  await expect(
+    page.getByText("Alcanzable con estos datos", { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByText("Alcanzable con estos datos", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Aportación prevista al mes (MXN)")).toHaveValue(
+    "10000",
+  );
+  const desktop = page.viewportSize()!;
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.getByRole("heading",{name:"Tu ruta para lograrlo"})).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({path:"artifacts/plan-mobile.png",fullPage:true});
+  await page.setViewportSize(desktop);
   await page
     .getByLabel("Producto hipotecario", { exact: true })
     .selectOption({ label: "Hipoteca de prueba" });
@@ -49,6 +85,10 @@ test("registro, onboarding, agente, simulaciones, ahorro, recarga y responsive",
   await page.getByLabel("Enganche · MXN", { exact: true }).fill("500000");
   await page.getByRole("button", { name: "Actualizar simulación" }).click();
   await expect(page.locator(".simulation-result>strong")).not.toHaveText(first);
+  await expect(page.getByText("Diferencia por reunir")).toBeVisible();
+  await expect(
+    page.getByLabel("Monto objetivo · MXN", { exact: true }),
+  ).toHaveValue("500000");
   await page.getByLabel("Nombre de tu meta").fill("El enganche de mi casa");
   await page.getByLabel("Monto objetivo · MXN", { exact: true }).fill("500000");
   await page.getByLabel("¿Cuánto llevas ahorrado? · MXN").fill("300000");

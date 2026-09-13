@@ -1,3 +1,6 @@
+import { useData } from "../hooks/use-data";
+import { buildFinancialScenario } from "../features/financial/financial-scenario";
+import { FinancialContext } from "../features/financial/FinancialOverview";
 import { Link } from "react-router-dom";
 import { useAgent } from "../features/agent/AgentContext";
 import { GoalCommand } from "../features/agent/GoalCommand";
@@ -14,6 +17,8 @@ export function ExperiencePage({
   onboarding?: boolean;
 }) {
   const { response, busy, error, reset, restore } = useAgent();
+  const { profile } = useData();
+  const scenario = profile.data ? buildFinancialScenario(profile.data) : null;
   return (
     <>
       <PageHeader
@@ -32,6 +37,16 @@ export function ExperiencePage({
           ) : undefined
         }
       />
+      {scenario ? (
+        <FinancialContext scenario={scenario} />
+      ) : profile.isPending ? (
+        <Skeleton cards={1} />
+      ) : profile.isError ? (
+        <ErrorState
+          error={profile.error}
+          retry={() => void profile.refetch()}
+        />
+      ) : null}
       <GoalCommand />
       {onboarding && (
         <Link className="text-link" to="/app">
