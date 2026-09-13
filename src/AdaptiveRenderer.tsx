@@ -1,19 +1,82 @@
-import { useState } from 'react';
-import { Action, AdaptiveComponent, AdaptiveUIResponse } from './types';
-import { FinancialDashboard, GoalDashboard, ActivityList, CashflowAlert } from './DashboardWidgets';
-const money = (value: unknown) => `$${Number(value || 0).toLocaleString('es-MX')}`;
-type ComponentProps = { component: AdaptiveComponent; onInteract: (component: AdaptiveComponent, action: Action, payload?: Record<string, unknown>) => void };
-type RendererProps = { response: AdaptiveUIResponse; onInteract: (component: AdaptiveComponent, action: Action, payload?: Record<string, unknown>) => void };
-
-function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) { return <article className={`data-card ${className}`}>{children}</article>; }
-function CardHead({ component }: { component: AdaptiveComponent }) { return <div className="card-head"><div><h2>{component.title}</h2>{component.description && <p>{component.description}</p>}</div><span className="card-index">{component.id.split('-')[0].slice(0, 2).toUpperCase()}</span></div>; }
-
-function Summary({ component }: { component: AdaptiveComponent }) { const d = component.data; return <Card><CardHead component={component}/><div className="summary-main"><div><span>Disponible al mes</span><strong>{money(d.availableMonthlyCash)}</strong></div><div className="balance-bars"><i style={{ width: '59%' }}/><i style={{ width: '16%' }}/><i style={{ width: '25%' }}/></div><div className="summary-legend"><span><i className="income"/>Ingresos {money(d.monthlyIncome)}</span><span><i className="expense"/>Gastos {money(d.monthlyExpenses)}</span><span><i className="saving"/>Ahorro {money(d.currentSavings)}</span></div></div></Card>; }
-function Capacity({ component }: { component: AdaptiveComponent }) { const d = component.data; return <Card className="capacity-card"><CardHead component={component}/><div className="capacity-value"><span>Vivienda de hasta</span><strong>{money(d.estimatedPropertyValue)}</strong><em>{String(d.note || '')}</em></div><div className="capacity-foot"><span>Pago mensual estimado <b>{money(d.estimatedMaxPayment)}</b></span><span>Relación de pago <b>{Math.round(Number(d.affordabilityRatio || 0) * 100)}%</b></span></div></Card>; }
-function Simulator({ component, onInteract }: ComponentProps) { const d = component.data; const [propertyValue, setPropertyValue] = useState(Number(d.propertyValue)); const [downPayment, setDownPayment] = useState(Number(d.downPayment)); const [termMonths, setTermMonths] = useState(Number(d.termMonths)); return <Card className="simulator-card"><CardHead component={component}/><div className="simulator-layout"><div className="simulator-result"><span>Mensualidad estimada</span><strong>{money(d.estimatedMonthlyPayment)}</strong><small>Tasa anual fija de {String(d.annualRate || 0)}%</small></div><div className="slider-group"><label>Valor de la vivienda <output>{money(propertyValue)}</output></label><input type="range" min="1000000" max="4000000" step="50000" value={propertyValue} onChange={(e) => setPropertyValue(Number(e.target.value))}/><label>Enganche <output>{money(downPayment)}</output></label><input type="range" min="100000" max={Math.max(100000, propertyValue - 100000)} step="10000" value={downPayment} onChange={(e) => setDownPayment(Number(e.target.value))}/><label>Plazo <output>{termMonths / 12} años</output></label><select value={termMonths} onChange={(e) => setTermMonths(Number(e.target.value))}><option value="180">15 años</option><option value="240">20 años</option><option value="300">25 años</option></select></div></div><button className="primary-button" onClick={() => onInteract(component, 'UPDATE_MORTGAGE_SIMULATION', { propertyValue, downPayment, termMonths, productId: d.productId })}>Recalcular escenario <span>{'->'}</span></button></Card>; }
-function Products({ component }: { component: AdaptiveComponent }) { const products = Array.isArray(component.data.products) ? component.data.products as Array<Record<string, unknown>> : []; return <Card className="products-card"><CardHead component={component}/><div className="product-grid">{products.map((product) => <div className={`product ${Boolean(product.highlighted) ? 'featured' : ''}`} key={String(product.id)}>{Boolean(product.highlighted) && <span className="featured-label">RECOMENDADO</span>}<h3>{String(product.name)}</h3><p>{String(product.description || '')}</p><strong>{money(product.monthlyPayment)} <small>/ mes</small></strong><div className="product-meta"><span>Tasa <b>{String(product.annualRate)}%</b></span><span>CAT <b>{String(product.cat)}%</b></span></div></div>)}</div></Card>; }
-function GoalForm({ component, onInteract }: ComponentProps) { const d = component.data; const [amount, setAmount] = useState(Number(d.targetAmount)); const [monthly, setMonthly] = useState(Number(d.suggestedMonthlyContribution)); return <Card className="goal-card"><CardHead component={component}/><div className="goal-form"><label>¿Cuánto quieres reunir?<output>{money(amount)}</output></label><input type="range" min="20000" max="500000" step="5000" value={amount} onChange={(e) => setAmount(Number(e.target.value))}/><label>Aportación mensual <output>{money(monthly)}</output></label><input type="range" min="1000" max="30000" step="500" value={monthly} onChange={(e) => setMonthly(Number(e.target.value))}/><div className="goal-date"><span>Fecha objetivo</span><b>{new Date(String(d.targetDate)).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}</b></div></div><button className="primary-button" onClick={() => onInteract(component, 'REQUEST_CREATE_SAVINGS_GOAL', { targetAmount: amount, monthlyContribution: monthly, targetDate: d.targetDate })}>Continuar con mi meta <span>{'->'}</span></button></Card>; }
-function Confirmation({ component, onInteract }: ComponentProps) { const d = component.data; return <Card className="confirmation-card"><div className="confirm-symbol">✓</div><CardHead component={component}/><p className="confirm-message">{String(d.message)}</p><div className="confirm-actions"><button className="primary-button" onClick={() => onInteract(component, 'CONFIRM_CREATE_SAVINGS_GOAL', { targetAmount: d.targetAmount, initialAmount: d.initialAmount, monthlyContribution: d.monthlyContribution, targetDate: d.targetDate })}>{String(d.confirmLabel || 'Confirmar')} <span>{'->'}</span></button><button className="text-button" onClick={() => onInteract(component, 'CANCEL')}>{String(d.cancelLabel || 'Cancelar')}</button></div></Card>; }
-function Progress({ component }: { component: AdaptiveComponent }) { const d = component.data; const current = Number(d.currentAmount || 0); const target = Number(d.targetAmount || 1); return <Card className="progress-card"><CardHead component={component}/><div className="progress-number"><strong>{money(current)}</strong><span>de {money(target)}</span></div><div className="progress-track"><i style={{ width: `${Math.min(100, current / target * 100)}%` }}/></div><div className="capacity-foot"><span>Aportación mensual <b>{money(d.monthlyContribution)}</b></span><span>Meta <b>{new Date(String(d.targetDate)).toLocaleDateString('es-MX', { month: 'short', year: 'numeric' })}</b></span></div></Card>; }
-
-export function AdaptiveRenderer({ response, onInteract }: RendererProps) { return <div className="component-stack">{response.components.map((component) => { switch (component.type) { case 'financial-dashboard': return <FinancialDashboard key={component.id} component={component} onInteract={onInteract}/>; case 'goal-dashboard': return <GoalDashboard key={component.id} component={component} onInteract={onInteract}/>; case 'activity-list': return <ActivityList key={component.id} component={component}/>; case 'cashflow-alert': return <CashflowAlert key={component.id} component={component} onInteract={onInteract}/>; case 'credit-options': return <Products key={component.id} component={component}/>; case 'financial-summary': return <Summary key={component.id} component={component}/>; case 'mortgage-capacity': return <Capacity key={component.id} component={component}/>; case 'mortgage-simulator': return <Simulator key={component.id} component={component} onInteract={onInteract}/>; case 'product-comparison': return <Products key={component.id} component={component}/>; case 'savings-goal-form': return <GoalForm key={component.id} component={component} onInteract={onInteract}/>; case 'confirmation': return <Confirmation key={component.id} component={component} onInteract={onInteract}/>; case 'goal-progress': return <Progress key={component.id} component={component}/>; default: return null; } })}</div>; }
+import { Component, ReactNode, useEffect, useState } from 'react';
+import { AdaptiveUIResponse, AdaptiveComponent, Action, actions } from './types';
+import { ActivityList, CashflowAlert, FinancialDashboard, GoalDashboard, WidgetProps } from './DashboardWidgets';
+import { money, date, percent } from './format';
+type RendererProps = { response: AdaptiveUIResponse; onInteract: WidgetProps['onInteract'] };
+type Row = Record<string, unknown>;
+const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : [];
+function CardHead({ component }: { component: AdaptiveComponent }) { return <div className="card-head"><div><h2>{component.title}</h2>{component.description && <p>{component.description}</p>}</div></div>; }
+function Summary({ component }: { component: AdaptiveComponent }) { const d = component.data; return <article className="data-card"><CardHead component={component}/><dl className="goal-details">{[['Ingreso mensual',d.monthlyIncome],['Gasto mensual',d.monthlyExpenses],['Ahorro',d.currentSavings],['Disponible estimado',d.availableMonthlyCash]].map(([label,value]) => <div key={String(label)}><dt>{String(label)}</dt><dd>{money(value)}</dd></div>)}</dl></article>; }
+function Capacity({ component }: { component: AdaptiveComponent }) { return <article className="data-card capacity-card"><CardHead component={component}/><div className="capacity-value"><span>Capacidad mensual estimada</span><strong>{money(component.data.estimatedMaxPayment)}</strong><em>{String(component.data.note || 'Estimación sujeta a evaluación; no representa aprobación.')}</em></div></article>; }
+function Products({ component }: { component: AdaptiveComponent }) {
+  const products = rows(component.data.products);
+  return <article className="data-card products-card"><CardHead component={component}/>{products.length ? <div className="product-grid">{products.map(product => <div className="product" key={String(product.id)}><h3>{String(product.name)}</h3><p>{String(product.description || 'Consulta las condiciones del producto.')}</p><strong>{percent(product.annualRate)} <small>tasa anual</small></strong><dl className="goal-details"><div><dt>CAT</dt><dd>{percent(product.cat)}</dd></div><div><dt>Plazo mínimo / máximo</dt><dd>{product.minTermMonths == null ? 'Sin dato' : String(product.minTermMonths)} / {product.maxTermMonths == null ? 'Sin dato' : String(product.maxTermMonths)} meses</dd></div><div><dt>Monto mínimo</dt><dd>{money(product.minimumAmount)}</dd></div><div><dt>Monto máximo</dt><dd>{money(product.maximumAmount)}</dd></div>{typeof product.monthlyPayment === 'number' && <div><dt>Mensualidad estimada</dt><dd>{money(product.monthlyPayment)}</dd></div>}</dl><p>Información para explorar. Sujeta a evaluación; no es una aprobación.</p></div>)}</div> : <div className="empty-dashboard">No hay productos disponibles para esta categoría en el catálogo.</div>}</article>;
+}
+function Simulator({ component, onInteract }: WidgetProps) {
+  const d = component.data;
+  const products = rows(d.products);
+  const [productId, setProductId] = useState(String(d.productId ?? products[0]?.id ?? ''));
+  const [value, setValue] = useState(d.propertyValue == null ? '' : String(d.propertyValue));
+  const [down, setDown] = useState(d.downPayment == null ? '' : String(d.downPayment));
+  const [term, setTerm] = useState(d.termMonths == null ? '' : String(d.termMonths));
+  const selected = products.find(product => product.id === productId);
+  const [validation, setValidation] = useState('');
+  useEffect(() => { if (d.estimatedMonthlyPayment != null) { setValue(String(d.propertyValue)); setDown(String(d.downPayment)); setTerm(String(d.termMonths)); } }, [d]);
+  return <article className="data-card simulator-card"><CardHead component={component}/><div className="simulator-layout"><div className="simulator-result"><span>Mensualidad estimada</span><strong>{d.estimatedMonthlyPayment == null ? 'Por calcular' : money(d.estimatedMonthlyPayment)}</strong><small>Calculada con la tasa del catálogo. No incluye costos no informados en el producto.</small></div><form className="goal-edit" onSubmit={event => { event.preventDefault(); if (Number(down) >= Number(value)) { setValidation('El enganche debe ser menor al valor de la vivienda.'); return; } setValidation(''); onInteract(component, 'UPDATE_MORTGAGE_SIMULATION', { productId, propertyValue: Number(value), downPayment: Number(down), termMonths: Number(term) }); }}>
+    <label>Producto<select required value={productId} onChange={event => setProductId(event.target.value)}><option value="">Selecciona un producto</option>{products.map(product => <option key={String(product.id)} value={String(product.id)}>{String(product.name)}</option>)}</select></label>
+    <label>Valor de la vivienda en MXN<input type="number" required min="0.01" step="0.01" value={value} onChange={event => setValue(event.target.value)}/></label><label>Enganche en MXN<input type="number" required min="0" step="0.01" value={down} onChange={event => setDown(event.target.value)}/></label>
+    <label>Plazo en meses<input type="number" required min={Number(selected?.minTermMonths) || 1} max={selected?.maxTermMonths == null ? undefined : Number(selected.maxTermMonths)} step="1" value={term} onChange={event => setTerm(event.target.value)}/></label>
+    {validation && <p role="alert">{validation}</p>}<button className="primary-button">Calcular estimación</button></form></div></article>;
+}
+function GoalForm({ component, onInteract }: WidgetProps) {
+  const d = component.data;
+  const [name, setName] = useState(String(d.name || ''));
+  const [amount, setAmount] = useState(d.targetAmount == null ? '' : String(d.targetAmount));
+  const [monthly, setMonthly] = useState(d.monthlyContribution == null ? '' : String(d.monthlyContribution));
+  const [targetDate, setTargetDate] = useState(String(d.targetDate || '').slice(0,10));
+  useEffect(() => { setName(String(d.name || '')); setAmount(d.targetAmount == null ? '' : String(d.targetAmount)); setMonthly(d.monthlyContribution == null ? '' : String(d.monthlyContribution)); setTargetDate(String(d.targetDate || '').slice(0,10)); }, [d]);
+  return <article className="data-card goal-card"><CardHead component={component}/><form className="goal-edit" onSubmit={event => { event.preventDefault(); onInteract(component, 'REQUEST_CREATE_SAVINGS_GOAL', { name, targetAmount: Number(amount), ...(monthly ? { monthlyContribution: Number(monthly) } : {}), ...(targetDate ? { targetDate } : {}), category: d.category, checklist: d.checklist }); }}>
+    <label>Nombre de tu meta<input required maxLength={150} value={name} onChange={event => setName(event.target.value)} placeholder="¿Qué quieres lograr?"/></label>
+    <label>Monto objetivo en MXN<input type="number" required min="0.01" step="0.01" value={amount} onChange={event => setAmount(event.target.value)}/></label>
+    <label>Aportación mensual en MXN<input type="number" min="0.01" step="0.01" value={monthly} onChange={event => setMonthly(event.target.value)}/><small>Opcional; permite estimar la fecha de finalización.</small></label>
+    <label>Fecha objetivo<input type="date" value={targetDate} onChange={event => setTargetDate(event.target.value)}/></label>
+    {Array.isArray(d.checklist) && <div><strong>Próximos pasos</strong><ul>{d.checklist.map((item,index) => <li key={index}>{String(item)}</li>)}</ul></div>}
+    <button className="primary-button">Revisar mi meta →</button></form></article>;
+}
+function Confirmation({ component, onInteract }: WidgetProps) {
+  const d = component.data;
+  const changes = (d.changes || d) as Row;
+  const action = typeof d.action === 'string' && (actions as readonly string[]).includes(d.action) ? d.action as Action : 'CONFIRM_CREATE_SAVINGS_GOAL';
+  return <article className="data-card confirmation-card" data-pending-action tabIndex={-1}><span className="dashboard-kicker">PENDIENTE DE CONFIRMACIÓN</span><CardHead component={component}/><p>{String(d.message)}</p><dl className="goal-details">
+    {!!changes.name && <div><dt>Nombre</dt><dd>{String(changes.name)}</dd></div>}
+    {changes.targetAmount != null && <div><dt>Monto objetivo</dt><dd>{money(changes.targetAmount)}</dd></div>}
+    {changes.monthlyContribution != null && <div><dt>Aportación mensual</dt><dd>{money(changes.monthlyContribution)}</dd></div>}
+    {!!changes.targetDate && <div><dt>Fecha objetivo</dt><dd>{date(changes.targetDate)}</dd></div>}
+    {!!changes.status && <div><dt>Nuevo estado</dt><dd>{({ PAUSED: 'Pausada', ACTIVE: 'Activa', CANCELLED: 'Cancelada', ARCHIVED: 'Archivada', DELETED: 'Eliminada' } as Record<string,string>)[String(changes.status)]}</dd></div>}
+  </dl><div className="confirm-actions"><button className="primary-button" onClick={() => onInteract(component, action)}>{String(d.confirmLabel || 'Confirmar')}</button><button className="text-button" onClick={() => onInteract(component, 'CANCEL')}>{String(d.cancelLabel || 'Cancelar')}</button></div></article>;
+}
+function Progress({ component }: { component: AdaptiveComponent }) { const d = component.data; return <article className="data-card progress-card"><CardHead component={component}/><strong>{money(d.currentAmount)} de {money(d.targetAmount)}</strong><p>Aportación mensual: {money(d.monthlyContribution)}</p><p>Fecha objetivo: {date(d.targetDate)}</p></article>; }
+class ViewBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? <div className="error-banner" role="alert">No pudimos mostrar esta vista. Actualiza el tablero para continuar.</div> : this.props.children; }
+}
+export function AdaptiveRenderer({ response, onInteract }: RendererProps) {
+  return <ViewBoundary key={response.sessionId}><div className="component-stack">{response.components.length === 0 && <div className="empty-dashboard">No hay información para mostrar en esta vista.</div>}{response.components.map(component => {
+    const props = { component, onInteract };
+    switch (component.type) {
+      case 'financial-dashboard': return <FinancialDashboard key={component.id} {...props}/>;
+      case 'goal-dashboard': return <GoalDashboard key={component.id} {...props}/>;
+      case 'activity-list': return <ActivityList key={component.id} component={component}/>;
+      case 'cashflow-alert': return <CashflowAlert key={component.id} {...props}/>;
+      case 'financial-summary': return <Summary key={component.id} component={component}/>;
+      case 'mortgage-capacity': return <Capacity key={component.id} component={component}/>;
+      case 'mortgage-simulator': return <Simulator key={component.id} {...props}/>;
+      case 'product-comparison': case 'credit-options': return <Products key={component.id} component={component}/>;
+      case 'savings-goal-form': return <GoalForm key={component.id} {...props}/>;
+      case 'confirmation': return <Confirmation key={component.id} {...props}/>;
+      case 'goal-progress': return <Progress key={component.id} component={component}/>;
+      default: return <div key={component.id} className="empty-dashboard" role="status">Esta sección todavía no está disponible. Puedes continuar con el resto del tablero.</div>;
+    }
+  })}</div></ViewBoundary>;
+}

@@ -32,15 +32,27 @@ La advertencia no bloquea por defecto; requiere confirmación explícita.
 - Mostrar capacidad como estimación.
 - Nunca presentar preaprobación si no existe esa decisión de dominio.
 
+## Vertical 5: objetivos abiertos y ciclo de vida
+
+- Reemplazar el supuesto de que toda intención desconocida es casa.
+- Crear `GENERAL_GOAL` para perro, celular, computadora, mudanza, salud, viaje y otros.
+- Implementar selector de metas activas.
+- Implementar editar, pausar, reactivar, cancelar, archivar y eliminar lógicamente.
+- Mantener movimientos e historial aunque una meta sea archivada o eliminada lógicamente.
+- Mostrar checklist y próximos pasos configurables por categoría.
+- Recalcular progreso, ritmo y fecha estimada después de cada movimiento.
+- Mostrar impacto antes de confirmar gastos o retiros.
+
 ## Orden recomendado
 
-1. Contratos y migración SQL.
-2. Repositorio/servicio de movimientos.
-3. MCP tools de dashboard y movimientos.
-4. AgentService que componga componentes con tools.
-5. Renderer y controles.
-6. Tests de integración y demo.
+1. Contratos e intención abierta.
+2. Modelo y ciclo de vida de metas.
+3. Repositorio/servicio de movimientos.
+4. MCP tools de dashboard, metas y movimientos.
+5. AgentService que componga componentes con tools.
+6. Renderer y controles.
+7. Tests de integración y demo.
 
 ## Criterio de done
 
-La demo permite iniciar sesión, pedir un dashboard, crear/seguir una meta, registrar una aportación, registrar un gasto extraordinario, ver la advertencia y revisar el impacto sin recargar datos inventados.
+La demo permite iniciar sesión, pedir un dashboard, crear/seleccionar/editar/pausar una meta genérica como “ahorrar para un celular” o “tener un perro”, registrar aportaciones y gastos, ver advertencias de impacto, confirmar movimientos y revisar el progreso sin datos inventados.

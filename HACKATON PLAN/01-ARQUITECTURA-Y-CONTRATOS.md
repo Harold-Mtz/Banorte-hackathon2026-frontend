@@ -64,6 +64,11 @@ type AdaptiveComponent = {
 - `cashflow-alert`: advertencia y consecuencias estimadas.
 - `activity-list`: movimientos recientes.
 - `credit-options`: productos y capacidad exploratoria.
+- `general-goal-planner`: plan para objetivos no especializados.
+- `goal-selector`: selector de metas activas.
+- `goal-management`: editar, pausar, reactivar, cancelar o archivar.
+- `goal-impact`: impacto de un movimiento sobre una meta.
+- `goal-checklist`: pasos de objetivos como mascota, celular, mudanza o viaje.
 - `financial-summary`
 - `mortgage-capacity`
 - `mortgage-simulator`
@@ -80,4 +85,28 @@ type AdaptiveComponent = {
 - `CONFIRM_CREATE_SAVINGS_GOAL`
 - `UPDATE_MORTGAGE_SIMULATION`
 - `REQUEST_CREDIT_OPTIONS`
+- `SELECT_GOAL`
+- `UPDATE_GOAL`
+- `PAUSE_GOAL`
+- `RESUME_GOAL`
+- `CANCEL_GOAL`
+- `ARCHIVE_GOAL`
+- `DELETE_GOAL`
+- `PREVIEW_GOAL_IMPACT`
 - `CANCEL`
+
+## Objetivo genérico
+
+```json
+{
+  "goalType": "GENERAL_GOAL",
+  "name": "Fondo para adoptar un perro",
+  "category": "PET",
+  "targetAmount": 18000,
+  "targetDate": "2027-02-01",
+  "monthlyContribution": 2500,
+  "checklist": ["adopción", "alimento inicial", "veterinario"]
+}
+```
+
+El frontend no debe asumir que una meta es hipotecaria. Debe renderizar el plan genérico y activar componentes especializados solo si el backend los devuelve.
